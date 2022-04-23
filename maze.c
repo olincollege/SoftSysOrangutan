@@ -30,7 +30,7 @@ int main()
 	getmaxyx(stdscr,screen_height,screen_width); // get the number of rows and columns 	
 	// maze_array
 
-	// initial x and y positions
+	// initial x and y positions of sprite
 	int x = screen_width / 4;
 	int y = screen_height / 4 + 4 * screen_height / 10;
 		
