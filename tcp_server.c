@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -62,7 +63,7 @@ int main()
 
 	// Binding newly created socket to given IP and verification
 	if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
-		printf("socket bind failed...\n");
+		printf("socket bind failed...\n%s", strerror(errno));
 		exit(0);
 	}
 	else
