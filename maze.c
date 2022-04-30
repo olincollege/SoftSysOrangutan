@@ -10,6 +10,7 @@ typedef struct{
 	int x;
 } Point;
 
+int fill_maze(int screen_height, int screen_width, char ch);
 void draw_maze(int screen_height, int screen_width, char ch);
 void draw_horizantal_line(Point *starting, int end_x, char ch);
 void draw_vertical_line(Point *starting, int end_y, char ch);
@@ -21,8 +22,7 @@ void cputsxy(unsigned int x, unsigned int y, char outString[255]);
 
 int key;
 int main()
-{
-	
+{	
 	clrscr();
 	getch();
 	int screen_height, screen_width;
@@ -35,9 +35,10 @@ int main()
 	int y = screen_height / 4 + 4 * screen_height / 10;
 		
 	while ((key  = getch()) != 'q')
-    {				
-		draw_maze(screen_height, screen_width, ch);
-		draw_outline(screen_height, screen_width, ch);
+    {	
+		fill_maze(screen_height, screen_width, ch);	
+		// draw_maze(screen_height, screen_width, ch);
+		// draw_outline(screen_height, screen_width, ch);
 
 		/* Delete the character */
 		cputsxy(x,y," ");
@@ -79,6 +80,31 @@ int main()
 	endwin();
 	return 0;
 }
+
+int fill_maze(int screen_height, int screen_width, char ch){
+	int starty = screen_height/4;
+	int startx = screen_width/4;
+	int height = 3 * screen_height/4 - screen_height/4;
+	int width = 3 * screen_width/4 - screen_width/4;
+	for (int j = starty; j <= starty + height; j++){
+		for (int i = startx; i <= startx + width; i++){
+			mvaddch(j, i , ch);
+		}
+	}
+	int maze_tracker[height][width];
+	memset(maze_tracker, 0, sizeof maze_tracker);
+
+	return maze_tracker;
+}
+
+// void walk(int y, int x, int maze_tracker){
+// 	maze_tracker[y][x] = 1;
+// 	int neighbors_x[4] = [x, x-1, x, x+1];
+// 	int neighbors_y[4] = [y-1, y, y+1, y];
+// 	struct Point neighbors[4] = {Point(y,x), };
+
+
+// }
 
 void draw_horizantal_line(Point *starting, int end_x, char ch){
 	for (int i = starting->x; i <= end_x; i++){
