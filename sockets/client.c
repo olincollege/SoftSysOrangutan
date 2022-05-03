@@ -37,7 +37,7 @@ void handle_shutdown(int sig){
 // server socket.
 void* clienthread(void* args)
 {
-	int network_socket;
+	int wait_for_game = 1; 
 
 	// Create a stream socket
 	network_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,6 +46,7 @@ void* clienthread(void* args)
 	struct sockaddr_in server_address;
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = INADDR_ANY;
+	//server_address.sin_addr.s_addr = inet_addr("192.168.35.226");
 	server_address.sin_port = htons(8888);
 
 	// Initiate a socket connection
@@ -54,25 +55,42 @@ void* clienthread(void* args)
 
 	// Check for connection error
 	if (connection_status < 0) {
-		puts("Error\n");
+		puts("Error, unable to connect\n");
 		return 0;
 	}
 
 	printf("Connection established\n");
 
-	char username[1025]; 
+	char input[1025]; 
 	printf("Please enter your username\n");
-	scanf("%s", username);
-	printf("your username is %s\n", username);
+	scanf("%s", input);
+	printf("your username is %s\n", input);
 	
 	char flag[] = "username";
 	// Send data to the socket
 	write(network_socket, &flag, sizeof(flag));
-	sleep(2);
-	write(network_socket, &username, sizeof(username));
-	
-	printf("Please wait for server to start the game!"); 
-	
+	sleep(1);
+	write(network_socket, &input, sizeof(input));
+
+	while(strncmp(input, "ready", 5 != 0)){
+		bzero(input, sizeof(input)); 
+		printf("Please type 'ready' when all players are ready to start\n");
+		scanf("%s", input);
+	}
+
+	write(network_socket, &input, sizeof(input));
+
+	char buff[1025];
+
+	while(wait_for_game){
+		bzero(buff, sizeof(buff));
+		read(network_socket, buff, sizeof(buff));
+		printf("From Server : %s", buff);
+		if ((strncmp(buff, "start", 5)) == 0) {
+			wait_for_game = 0; 
+		}
+	}
+
 	sleep(20);
 	// Close the connection
 	close(network_socket);
