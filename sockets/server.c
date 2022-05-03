@@ -20,47 +20,18 @@
 #define PORT 8888
 
 static int max_clients = 30; 
-char *welcome_message = "welcome! Please enter a username \r\n";
+char *welcome_message = "Please wait for other players to be ready \r\n";
+char start_message[] = "start"; 
 int master_socket; 
 
-int getch(void)
-{
-    struct termios oldattr, newattr;
-    int ch;
-    tcgetattr( STDIN_FILENO, &oldattr );
-    newattr = oldattr;
-    newattr.c_lflag &= ~( ICANON | ECHO );
-    tcsetattr( STDIN_FILENO, TCSANOW, &newattr );
-    ch = getchar();
-    tcsetattr( STDIN_FILENO, TCSANOW, &oldattr );
-    return ch;
-}
-
-int kbhit(void)
-{
-	struct termios oldt, newt;
-	int ch;
-	int oldf;
-
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-	fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-	ch = getchar();
-
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-	if(ch != EOF)
+int check_if_clients_ready(int clients_ready[]){
+	for (int i = 0 ; i < max_clients ; i++)
 	{
-		ungetc(ch, stdin);
-		return 1;
+		if(clients_ready[i] == 10){
+			return 0; 
+		}
 	}
-
-	return 0;
+	return 1; 
 }
 
 int catch_signal(int sig, void(*handler)(int)){
@@ -164,8 +135,9 @@ int main(int argc , char *argv[])
 	struct sockaddr_in address;
 	char buffer[1025]; //data buffer of 1K
     int i, max_sd, sd, valread, activity, new_socket;
-	int client_socket[max_clients];
-	char *socket_usernames[max_clients]; 
+	int client_socket[30];
+	char *socket_usernames[30]; 
+	int clients_ready[30] = {}; 
 	int addrlen = sizeof(address);
 
 	//initialise all client_socket[] to 0 so not checked
@@ -220,6 +192,7 @@ int main(int argc , char *argv[])
 				if(client_socket[i] == 0 )
 				{
 					client_socket[i] = new_socket;
+					clients_ready[i] = 10; 
 					printf("Adding to list of sockets as %d\n" , i);
 						
 					break;
@@ -262,6 +235,12 @@ int main(int argc , char *argv[])
 						accepting_username = 0; 
 					} else if (strstr(buffer, "username")) {
 						accepting_username = 1; 
+					} else if (strstr(buffer, "ready")) {
+						clients_ready[i] = 1; 
+						printf("%s is ready\n", socket_usernames[i]);
+						if(check_if_clients_ready(clients_ready)){
+							printf("ready to start game\n");
+						}; 
 					}
 					
 			
@@ -269,15 +248,9 @@ int main(int argc , char *argv[])
 				}
 			}
 		}
-
-		// puts("If ready, type 'start' to start the game, else enter any input to refresh server.");
-		// scanf("%s", gamemaster_input);
-
-		// if(strcmp(gamemaster_input, "start") == 0){
-		// 	puts("Starting game"); 
-		// 	accepting_connections = 0; 
-		// }
 	}
+	
+	//start game
 		
 	return 0;
 }
