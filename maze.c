@@ -3,6 +3,8 @@
 #include <string.h> 
 #include <time.h>
 #include <stdlib.h>
+#include <time.h> 
+#include "maze_array.h"
 // #include "maze.h"
  
 typedef struct{
@@ -10,36 +12,33 @@ typedef struct{
 	int x;
 } Point;
 
-void draw_maze(int screen_height, int screen_width, char ch);
+// int fill_maze(int screen_height, int screen_width, char str[3]);
+void draw_maze(int screen_height, int screen_width);
 void draw_horizantal_line(Point *starting, int end_x, char ch);
 void draw_vertical_line(Point *starting, int end_y, char ch);
-void draw_outline(int screen_height, int screen_width, char ch);
+void draw_outline(int starty, int startx, char ch);
 void clrscr();
 void cputsxy(unsigned int x, unsigned int y, char outString[255]);
 
 
 
 int key;
-int main()
-{
-	
+int main() {	
 	clrscr();
-	getch();
 	int screen_height, screen_width;
-	char ch = '*';
+	clock_t t;
+	time_t start, stop;
 	getmaxyx(stdscr,screen_height,screen_width); // get the number of rows and columns 	
-	// maze_array
-
 	// initial x and y positions of sprite
-	int x = screen_width / 4;
-	int y = screen_height / 4 + 4 * screen_height / 10;
-		
-	while ((key  = getch()) != 'q')
-    {				
-		draw_maze(screen_height, screen_width, ch);
-		draw_outline(screen_height, screen_width, ch);
-
-		/* Delete the character */
+	int starty = screen_height/2 - 15;
+	int startx = screen_width/2 - 33;
+	int x = startx + 36;
+	int y = starty + 2;
+	draw_maze(starty, startx);
+	cputsxy(x,y,"@");
+	start = time(NULL);
+	while ((key  = getch()) != 'q') {		
+		/* Delete the character */		
 		cputsxy(x,y," ");
 		/* Handle keys */
 		int current_x = x;
@@ -63,13 +62,23 @@ int main()
 		}
 
 		// checking for edges of the maze
-		if (mvinch(y, x) == '*'){
+		if (mvinch(y, x) == '#'){
 			x = current_x;
 			y = current_y;
 		}
+		if (mvinch(y, x) == '*'){
+			cputsxy(x,y,"@");
+			stop = time(NULL);
+			// endwin();
+			endwin();
+			
+			printf ("You took %ld seconds to complete the maze!\n",stop - start);
+			break;
+			// return 0;
+			
+			
+		}
 		cputsxy(x,y,"@");
-		/* Refresh the terminal */
-		refresh();
 	
     }
     /* Turn echo and cursor back on */
@@ -80,45 +89,19 @@ int main()
 	return 0;
 }
 
-void draw_horizantal_line(Point *starting, int end_x, char ch){
-	for (int i = starting->x; i <= end_x; i++){
-		mvaddch(starting->y, i , ch);
+void draw_maze(int starty, int startx){
+	// int starty = screen_height/2 - 15;
+	// int startx = screen_width/2 - 33;
+	for(int i = 0; i < 30; i++){
+		for(int j = 0; j < 39; j++){
+			if (maze_array[i][j] == 0){
+				mvprintw(starty + i, startx + j*2 , "##");
+			}
+		}
 	}
+	mvprintw(starty + 1, startx + 32, "**");
 }
 
-void draw_vertical_line(Point *starting, int end_y, char ch){
-	for (int i = starting->y; i <= end_y; i++){
-		mvaddch(i, starting->x , ch);
-	}
-}
-
-void draw_maze(int screen_height, int screen_width, char ch){
-	int starty = screen_height/4;
-	int startx = screen_width/4;
-	int height = 3 * screen_height/4 - screen_height/4;
-	int width = 3 * screen_width/4 - screen_width/4;
-	Point one = {starty + height/4, startx};
-	draw_horizantal_line(&one, startx + 3*width/4, ch);
-
-	Point two = {starty + height/2, startx + width/4};
-	draw_horizantal_line(&two, startx + width, ch);
-
-	Point three = {starty + 3 * height/4, startx};
-	draw_horizantal_line(&three, startx + 3*width/4, ch);
-
-	draw_vertical_line(&one,starty + 3 * height/4, ch);
-
-}
-
-void draw_outline(int screen_height, int screen_width, char ch){	
-	Point tl = {screen_height/4, screen_width/4};
-	Point tr = {screen_height/4, 3 * screen_width/4};	
-	Point bl = {3 * screen_height/4, screen_width/4};
-	Point br = {3 * screen_height/4,3 * screen_width/4};
-	draw_horizantal_line(&tl, (&tr)->x, ch);
-	draw_horizantal_line(&bl, (&br)->x, ch);
-	draw_vertical_line(&tr, (&br)->y, ch);
-}
 
 void cputsxy(unsigned int x, unsigned int y, char outString[255])
 {
