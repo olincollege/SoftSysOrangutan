@@ -18,9 +18,5 @@ w, h = binary.size
 nim = np.array(binary)
 maze_array = nim.tolist()
 print(maze_array)
-# Print it out 
-# for r in range(h):
-#     for c in range(w):        
-#         print(nim[r,c],end='')
-#     print()
+
 
