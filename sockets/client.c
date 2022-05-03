@@ -91,7 +91,7 @@ void* clienthread(void* args)
 			wait_for_game = 0; 
 		}
 	}
-	run_maze();
+	int time_taken = run_maze();
 	
 	sleep(20);
 	// Close the connection
