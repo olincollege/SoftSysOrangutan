@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h> //strlen
 #include <stdlib.h>
+#include <signal.h>
 #include <errno.h>
 #include <unistd.h> //close
 #include <arpa/inet.h> //close
@@ -10,50 +11,91 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
-	
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #define TRUE 1
 #define FALSE 0
 #define PORT 8888
 
 static int max_clients = 30; 
 char *welcome_message = "welcome! Please enter a username \r\n";
+int master_socket; 
 
-// void handle_incoming_connection(int **client_socket, struct sockaddr_in* address, int* master_socket, int* addrlen, int * new_socket){
-// 	if ((*new_socket = accept(*master_socket,(struct sockaddr *)address, (socklen_t*)addrlen))<0)
-// 	{
-// 		perror("accept");
-// 		exit(EXIT_FAILURE);
-// 	}
-		
-// 	//inform user of socket number - used in send and receive commands
-// 	printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , 
-// 	*new_socket , inet_ntoa(address ->sin_addr) , ntohs(address -> sin_port));
+int getch(void)
+{
+    struct termios oldattr, newattr;
+    int ch;
+    tcgetattr( STDIN_FILENO, &oldattr );
+    newattr = oldattr;
+    newattr.c_lflag &= ~( ICANON | ECHO );
+    tcsetattr( STDIN_FILENO, TCSANOW, &newattr );
+    ch = getchar();
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldattr );
+    return ch;
+}
 
-// 	//send new connection greeting message
-// 	if(send(*new_socket, welcome_message, strlen(welcome_message), 0) != strlen(welcome_message) )
-// 	{
-// 		perror("send");
-// 	}
-		
-// 	puts("Welcome message sent successfully");
-		
-// 	//add new socket to array of sockets
-// 	for (int i = 0; i < max_clients; i++)
-// 	{
-// 		//if position is empty
-// 		if( *client_socket[i] == 0 )
-// 		{
-// 			*client_socket[i] = *new_socket;
-// 			printf("Adding to list of sockets as %d\n" , i);
-				
-// 			break;
-// 		}
-// 	}
-// }
+int kbhit(void)
+{
+	struct termios oldt, newt;
+	int ch;
+	int oldf;
 
-void start_game(int sig){
-	puts("Game started");
-	return; 
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+	ch = getchar();
+
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+	fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+	if(ch != EOF)
+	{
+		ungetc(ch, stdin);
+		return 1;
+	}
+
+	return 0;
+}
+
+int catch_signal(int sig, void(*handler)(int)){
+	struct sigaction action;
+	action.sa_handler = handler; 
+	sigemptyset(&action.sa_mask); 
+	action.sa_flags = 0; 
+	return sigaction (sig, &action, NULL); 
+}
+
+void handle_shutdown(int sig){
+	if(master_socket)
+		close(master_socket);
+	printf("\nGoodbye!\n");
+	exit(0);
+}
+
+void handle_incoming_connection(struct sockaddr_in* address, int* master_socket, int* addrlen, int * new_socket){
+	if ((*new_socket = accept(*master_socket,(struct sockaddr *)address, (socklen_t*)addrlen))<0)
+	{
+		perror("accept");
+		exit(EXIT_FAILURE);
+	}
+		
+	//inform user of socket number - used in send and receive commands
+	printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , 
+	*new_socket , inet_ntoa(address ->sin_addr) , ntohs(address -> sin_port));
+
+	//send new connection greeting message
+	if(send(*new_socket, welcome_message, strlen(welcome_message), 0) != strlen(welcome_message) )
+	{
+		perror("send");
+	}
+		
+	puts("Welcome message sent successfully");
 }
 
 void add_child_sockets(int client_socket[], int* sd, int* max_sd, fd_set * readfds){
@@ -74,7 +116,8 @@ void add_child_sockets(int client_socket[], int* sd, int* max_sd, fd_set * readf
 }
 
 void create_master_socket(int *master_socket, struct sockaddr_in* address){
-    int opt = TRUE;
+	
+	int opt = TRUE;
 	//struct sockaddr_in address;
 
 	//create a master socket
@@ -117,29 +160,29 @@ void create_master_socket(int *master_socket, struct sockaddr_in* address){
 	
 int main(int argc , char *argv[])
 {
-    		
-	//set of socket descriptors
-	fd_set readfds;
-
+	fd_set readfds; //set of socket descriptors
 	struct sockaddr_in address;
-
 	char buffer[1025]; //data buffer of 1K
-
-    int i, max_sd, sd, valread, activity, addrlen, new_socket, master_socket;
+    int i, max_sd, sd, valread, activity, new_socket;
 	int client_socket[max_clients];
-	// int *ptr = &client_socket;
+	int addrlen = sizeof(address);
+
 	//initialise all client_socket[] to 0 so not checked
 	for (i = 0; i < max_clients; i++)
 	{
 		client_socket[i] = 0;
 	}
+
+	if(catch_signal(SIGINT, handle_shutdown) == -1){
+		perror("Can't set interrupt handler");
+	}
+
     create_master_socket(&master_socket, &address);
 		
 	//accept the incoming connection
-	addrlen = sizeof(address);
 	puts("Waiting for connections ...");
+	
 	int accepting_connections = 1; 
-
 	char gamemaster_input[100]; 
 		
 	while(accepting_connections)
@@ -166,28 +209,13 @@ int main(int argc , char *argv[])
 		//then its an incoming connection
 		if (FD_ISSET(master_socket, &readfds))
 		{
-			if ((new_socket = accept(master_socket,(struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
-			{
-				perror("accept");
-				exit(EXIT_FAILURE);
-			}
+			handle_incoming_connection(&address, &master_socket, &addrlen, &new_socket);
 			
-			//inform user of socket number - used in send and receive commands
-			printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-		
-			//send new connection greeting message
-			if(send(new_socket, welcome_message, strlen(welcome_message), 0) != strlen(welcome_message) )
-			{
-				perror("send");
-			}
-				
-			puts("Welcome message sent successfully");
-				
 			//add new socket to array of sockets
 			for (i = 0; i < max_clients; i++)
 			{
 				//if position is empty
-				if( client_socket[i] == 0 )
+				if(client_socket[i] == 0 )
 				{
 					client_socket[i] = new_socket;
 					printf("Adding to list of sockets as %d\n" , i);
@@ -195,7 +223,6 @@ int main(int argc , char *argv[])
 					break;
 				}
 			}
-			puts("If ready, press space bar to start game");
 		}
 			
 		//else its some IO operation on some other socket
@@ -203,7 +230,7 @@ int main(int argc , char *argv[])
 		{
 			sd = client_socket[i];
 				
-			if (FD_ISSET( sd , &readfds))
+			if (FD_ISSET(sd , &readfds))
 			{
 				//Check if it was for closing , and also read the
 				//incoming message
@@ -226,15 +253,19 @@ int main(int argc , char *argv[])
 					//set the string terminating NULL byte on the end
 					//of the data read
 					buffer[valread] = '\0';
+					printf("server read %s\n", buffer);
 					send(sd , buffer , strlen(buffer) , 0 );
 				}
 			}
 		}
-		scanf("%s", gamemaster_input);
-		if(strcmp(gamemaster_input, "start") == 0){
-			puts("Starting game"); 
-			accepting_connections = 0; 
-		}
+
+		// puts("If ready, type 'start' to start the game, else enter any input to refresh server.");
+		// scanf("%s", gamemaster_input);
+
+		// if(strcmp(gamemaster_input, "start") == 0){
+		// 	puts("Starting game"); 
+		// 	accepting_connections = 0; 
+		// }
 	}
 		
 	return 0;
