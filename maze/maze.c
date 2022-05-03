@@ -5,25 +5,19 @@
 #include <stdlib.h>
 #include <time.h> 
 #include "maze_array.h"
-// #include "maze.h"
+#include "maze.h"
 
-// int fill_maze(int screen_height, int screen_width, char str[3]);
-void draw_maze(int screen_height, int screen_width);
-void clrscr();
-void cputsxy(unsigned int x, unsigned int y, char outString[255]);
-
-int key;
-int main() {	
+int run_maze(){
 	clrscr();
+	int key;
 	int screen_height, screen_width;
-	clock_t t;
 	time_t start, stop;
-	getmaxyx(stdscr,screen_height,screen_width); // get the number of rows and columns 	
-	// initial x and y positions of sprite
+	getmaxyx(stdscr,screen_height,screen_width);
 	int starty = screen_height/2 - 15;
 	int startx = screen_width/2 - 33;
 	int x = startx + 36;
 	int y = starty + 2;
+	int final_time;
 	draw_maze(starty, startx);
 	cputsxy(x,y,"@");
 	start = time(NULL);
@@ -60,9 +54,11 @@ int main() {
 			cputsxy(x,y,"@");
 			stop = time(NULL);
 			// endwin();
-			endwin();			
-			printf ("You took %ld seconds to complete the maze!\n",stop - start);
-			break;			
+			final_time = stop - start;
+			endwin();	
+			return final_time;		
+			// printf ("You took %ld seconds to complete the maze!\n",stop - start);
+			// break;			
 		}
 		cputsxy(x,y,"@");
 	
@@ -72,7 +68,7 @@ int main() {
     curs_set(1);
     /* End program */
 	endwin();
-	return 0;
+	return -1;
 }
 
 void draw_maze(int starty, int startx){

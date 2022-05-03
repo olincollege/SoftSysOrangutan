@@ -12,6 +12,7 @@
 // For threading, link with lpthread
 #include <pthread.h>
 #include <semaphore.h>
+#include "../maze/maze.h"
 
 int network_socket;
 
@@ -90,7 +91,8 @@ void* clienthread(void* args)
 			wait_for_game = 0; 
 		}
 	}
-
+	run_maze();
+	
 	sleep(20);
 	// Close the connection
 	close(network_socket);
@@ -102,6 +104,7 @@ void* clienthread(void* args)
 // Driver Code
 int main()
 {	
+
 	if(catch_signal(SIGINT, handle_shutdown) == -1){
 		perror("Can't set interrupt handler");
 	}
@@ -110,7 +113,9 @@ int main()
 
 	// Create thread
 	pthread_create(&tid, NULL, clienthread, NULL);
+	
 	sleep(20);
+
 
 	// Suspend execution of
 	// calling thread
