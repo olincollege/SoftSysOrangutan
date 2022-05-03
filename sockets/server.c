@@ -165,6 +165,7 @@ int main(int argc , char *argv[])
 	char buffer[1025]; //data buffer of 1K
     int i, max_sd, sd, valread, activity, new_socket;
 	int client_socket[max_clients];
+	char *socket_usernames[max_clients]; 
 	int addrlen = sizeof(address);
 
 	//initialise all client_socket[] to 0 so not checked
@@ -183,6 +184,7 @@ int main(int argc , char *argv[])
 	puts("Waiting for connections ...");
 	
 	int accepting_connections = 1; 
+	int accepting_username = 0; 
 	char gamemaster_input[100]; 
 		
 	while(accepting_connections)
@@ -245,6 +247,7 @@ int main(int argc , char *argv[])
 					//Close the socket and mark as 0 in list for reuse
 					close( sd );
 					client_socket[i] = 0;
+					socket_usernames[i] = "";
 				}
 					
 				//Echo back the message that came in
@@ -253,7 +256,15 @@ int main(int argc , char *argv[])
 					//set the string terminating NULL byte on the end
 					//of the data read
 					buffer[valread] = '\0';
-					printf("server read %s\n", buffer);
+					if(accepting_username){
+						socket_usernames[i] = buffer; 
+						printf("username set to %s\n", buffer);
+						accepting_username = 0; 
+					} else if (strstr(buffer, "username")) {
+						accepting_username = 1; 
+					}
+					
+			
 					send(sd , buffer , strlen(buffer) , 0 );
 				}
 			}
