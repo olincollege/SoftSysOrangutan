@@ -1,0 +1,1 @@
+extern int maze_array[30][39];

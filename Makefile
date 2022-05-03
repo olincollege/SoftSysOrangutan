@@ -1,2 +1,2 @@
-maze: maze.c
-	gcc maze.c -o maze -lcurses 
+maze: maze.c maze_array.c
+	gcc maze.c maze_array.c -o maze -lcurses 
