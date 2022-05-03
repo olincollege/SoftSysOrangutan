@@ -6,21 +6,11 @@
 #include <time.h> 
 #include "maze_array.h"
 // #include "maze.h"
- 
-typedef struct{
-	int y;
-	int x;
-} Point;
 
 // int fill_maze(int screen_height, int screen_width, char str[3]);
 void draw_maze(int screen_height, int screen_width);
-void draw_horizantal_line(Point *starting, int end_x, char ch);
-void draw_vertical_line(Point *starting, int end_y, char ch);
-void draw_outline(int starty, int startx, char ch);
 void clrscr();
 void cputsxy(unsigned int x, unsigned int y, char outString[255]);
-
-
 
 int key;
 int main() {	
@@ -70,13 +60,9 @@ int main() {
 			cputsxy(x,y,"@");
 			stop = time(NULL);
 			// endwin();
-			endwin();
-			
+			endwin();			
 			printf ("You took %ld seconds to complete the maze!\n",stop - start);
-			break;
-			// return 0;
-			
-			
+			break;			
 		}
 		cputsxy(x,y,"@");
 	
@@ -90,8 +76,6 @@ int main() {
 }
 
 void draw_maze(int starty, int startx){
-	// int starty = screen_height/2 - 15;
-	// int startx = screen_width/2 - 33;
 	for(int i = 0; i < 30; i++){
 		for(int j = 0; j < 39; j++){
 			if (maze_array[i][j] == 0){
@@ -103,8 +87,7 @@ void draw_maze(int starty, int startx){
 }
 
 
-void cputsxy(unsigned int x, unsigned int y, char outString[255])
-{
+void cputsxy(unsigned int x, unsigned int y, char outString[255]){
     mvprintw(y,x, outString);
 }
 
