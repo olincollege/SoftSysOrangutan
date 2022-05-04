@@ -3,7 +3,7 @@ all: server main client.o maze.o
 server: sockets/server.c
 	gcc sockets/server.c -o server
 
-client: maze.o client.o 
+main: maze.o client.o 
 	gcc -o main maze.o client.o maze/maze_array.c -lcurses -pthread
 
 client.o: sockets/client.c
