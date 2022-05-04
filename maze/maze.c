@@ -1,4 +1,4 @@
-// Just trying out examples with ncurses for right now
+/*Functions to generate and play maze that are used in client.c*/
 #include <ncurses.h>			/* ncurses.h includes stdio.h */  
 #include <string.h> 
 #include <time.h>
