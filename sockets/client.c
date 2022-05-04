@@ -53,7 +53,7 @@ void get_username(){
 void wait_for_user_ready(){
 	char user_input[1025];
 
-	while(strncmp(user_input, "ready", 5 != 0)){
+	while(strncmp(user_input, "ready", 5) != 0){
 		bzero(user_input, sizeof(user_input)); 
 		printf("Please type 'ready' when all players are ready to start\n");
 		scanf("%s", user_input);
@@ -62,14 +62,13 @@ void wait_for_user_ready(){
 }
 
 void wait_for_server_ready(int c){
-
 	int wait_for_game = 1;
 	char buff[1025];
 
 	while(wait_for_game){
 		bzero(buff, sizeof(buff));
 		read(network_socket, buff, sizeof(buff));
-		printf("From Server : %s", buff);
+		printf("From Server : %s\n", buff);
 		if (strstr(buff, "start") && c == 1) {
 			wait_for_game = 0; 
 		} else if (strstr(buff, "Game has ended!") && c == 2){
@@ -87,7 +86,7 @@ void run_game(){
 	sprintf(time, "%d", time_taken);
 	strcpy(buff,"\'s time: "); 
 	strcat(buff, time); 
-	printf("Sending time to server! Please wait for other players to finish"); 
+	printf("Sending time to server! Please wait for other players to finish\n"); 
 	write(network_socket, &buff, sizeof(buff));
 }
 
@@ -102,7 +101,7 @@ int catch_signal(int sig, void(*handler)(int)){
 void handle_shutdown(int sig){
 	if(network_socket)
 		close(network_socket);
-	printf("\nGoodbye!\n");
+	printf("\nGoodbye!");
 	exit(0);
 }
 

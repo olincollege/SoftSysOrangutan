@@ -20,38 +20,21 @@
 #define PORT 8888
 
 static int max_clients = 30; 
-char *welcome_message = "Please wait for other players to be ready \r\n";
-char start_message[] = "start"; 
-char end_message[1025]; 
 int master_socket; 
-int num_playing = 0;
-int num_connected = 0;  
-int num_times = 0;
-int needs_freeing[30] = { 0 }; 
+char *welcome_message = "Please wait for other players to be ready \r\n";
 
-void free_memory(char** socket_usernames){
+void free_memory(char** socket_usernames, int needs_freeing[]){
 	for (int i = 0; i < max_clients; i++){
 		if(needs_freeing[i])
 			free(socket_usernames[i]);
 	}
 }
 
-void send_end_message(int client_socket[]){
-	
+void send_message(int client_socket[], char message[]){
 	for (int i = 0 ; i < max_clients ; i++)
 	{
-		send(client_socket[i], end_message , strlen(end_message) , 0);
+		send(client_socket[i], message , strlen(message) , 0);
 	}
-
-}
-
-
-void start_game(int client_socket[]){
-	for (int i = 0 ; i < max_clients ; i++)
-	{
-		send(client_socket[i], start_message , strlen(start_message) , 0);
-	}
-
 }
 
 int catch_signal(int sig, void(*handler)(int)){
@@ -69,8 +52,8 @@ void handle_shutdown(int sig){
 	exit(0);
 }
 
-void handle_incoming_connection(struct sockaddr_in* address, int* master_socket, int* addrlen, int * new_socket){
-	if ((*new_socket = accept(*master_socket,(struct sockaddr *)address, (socklen_t*)addrlen))<0)
+void handle_incoming_connection(struct sockaddr_in* address, int* addrlen, int * new_socket){
+	if ((*new_socket = accept(master_socket,(struct sockaddr *)address, (socklen_t*)addrlen))<0)
 	{
 		perror("accept");
 		exit(EXIT_FAILURE);
@@ -81,7 +64,7 @@ void handle_incoming_connection(struct sockaddr_in* address, int* master_socket,
 	*new_socket , inet_ntoa(address ->sin_addr) , ntohs(address -> sin_port));
 
 	//send new connection greeting message
-	if(send(*new_socket, welcome_message, strlen(welcome_message), 0) != strlen(welcome_message) )
+	if(send(*new_socket, welcome_message, strlen(welcome_message), 0) != strlen(welcome_message))
 	{
 		perror("send");
 	}
@@ -157,11 +140,15 @@ int main(int argc , char *argv[])
     int i, max_sd, sd, valread, activity, new_socket;
 	int client_socket[30];
 	char *socket_usernames[30]; 
+	int needs_freeing[30] = { 0 }; 
+	int num_playing = 0;
+	int num_connected = 0;  
+	int num_finished = 0;
 
-	char *client_times[30] = {}; 
+	char start_message[] = "start"; 
+	char end_message[] = "Game has ended! Here are the results: \n"; 
+
 	int addrlen = sizeof(address);
-
-	strcpy(end_message,"Game has ended! Here are the results: \n"); 
 
 	//initialise all client_socket[] to 0 so not checked
 	for (i = 0; i < max_clients; i++)
@@ -205,7 +192,7 @@ int main(int argc , char *argv[])
 		//then its an incoming connection
 		if (FD_ISSET(master_socket, &readfds))
 		{
-			handle_incoming_connection(&address, &master_socket, &addrlen, &new_socket);
+			handle_incoming_connection(&address, &addrlen, &new_socket);
 			
 			//add new socket to array of sockets
 			for (i = 0; i < max_clients; i++)
@@ -259,14 +246,14 @@ int main(int argc , char *argv[])
 						strcpy(socket_usernames[i],buffer); 
 						printf("username set to %s\n", socket_usernames[i]);
 						accepting_username = 0; 
-					}else if (strstr(buffer, "username")) {
+					} else if (strstr(buffer, "username")) {
 						accepting_username = 1; 
 					} else if (strstr(buffer, "ready")) {
 						num_playing += 1; 
 						printf("%s is ready\n", socket_usernames[i]);
 						if(num_playing == num_connected){
 							printf("starting game\n");
-							start_game(client_socket);
+							send_message(client_socket, start_message);
 						}; 
 					} else if (strstr(buffer, "time:")) {
 						printf("time recieved from %s\n", socket_usernames[i]); 
@@ -274,16 +261,14 @@ int main(int argc , char *argv[])
 						strcat(end_message, socket_usernames[i]);
 						strcat(end_message, "\n");
 
-
-						num_times += 1; 
-						if(num_times == num_playing){
-							free_memory(socket_usernames); 
-							send_end_message(client_socket);
+						num_finished += 1; 
+						if(num_finished == num_playing){
+							free_memory(socket_usernames, needs_freeing); 
+							send_message(client_socket, end_message);
 							playing = 0;  
 							
 						}
 					}
-			
 			
 				}
 			}
