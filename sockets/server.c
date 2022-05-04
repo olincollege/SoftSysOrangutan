@@ -22,13 +22,25 @@
 static int max_clients = 30; 
 char *welcome_message = "Please wait for other players to be ready \r\n";
 char start_message[] = "start"; 
+char end_message[1025]; 
 int master_socket; 
+int num_playing = 0;
+int num_connected = 0;  
+int num_times = 0;
+
+void end_game(int client_socket[]){
+	for (int i = 0 ; i < max_clients ; i++)
+	{
+		send(client_socket[i], end_message , strlen(end_message) , 0);
+	}
+
+}
+
 
 void start_game(int client_socket[]){
 	for (int i = 0 ; i < max_clients ; i++)
 	{
 		send(client_socket[i], start_message , strlen(start_message) , 0);
-
 	}
 
 }
@@ -147,7 +159,10 @@ int main(int argc , char *argv[])
 	int client_socket[30];
 	char *socket_usernames[30]; 
 	int clients_ready[30] = {}; 
+	char *client_times[30] = {}; 
 	int addrlen = sizeof(address);
+
+	strcpy(end_message,"Game has ended! Here are the results: \n"); 
 
 	//initialise all client_socket[] to 0 so not checked
 	for (i = 0; i < max_clients; i++)
@@ -201,7 +216,7 @@ int main(int argc , char *argv[])
 				if(client_socket[i] == 0 )
 				{
 					client_socket[i] = new_socket;
-					clients_ready[i] = 10; 
+					num_connected += 1; 
 					printf("Adding to list of sockets as %d\n" , i);
 						
 					break;
@@ -242,19 +257,28 @@ int main(int argc , char *argv[])
 						socket_usernames[i] = buffer; 
 						printf("username set to %s\n", buffer);
 						accepting_username = 0; 
-					} else if (strstr(buffer, "username")) {
+					}else if (strstr(buffer, "username")) {
 						accepting_username = 1; 
 					} else if (strstr(buffer, "ready")) {
-						clients_ready[i] = 1; 
+						num_playing += 1; 
 						printf("%s is ready\n", socket_usernames[i]);
-						if(check_if_clients_ready(clients_ready)){
+						if(num_playing == num_connected){
 							printf("starting game\n");
 							start_game(client_socket);
 						}; 
+					} else if (strstr(buffer, "time:")) {
+						printf("time recieved\n"); 
+						strcat(socket_usernames[i], buffer);
+						strcat(end_message, socket_usernames[i]);
+						strcat(end_message, "\n");
+
+						num_times += 1; 
+						if(num_times == num_playing){
+							end_game(client_socket); 
+						}
 					}
 			
 			
-					send(sd , buffer , strlen(buffer) , 0 );
 				}
 			}
 		}

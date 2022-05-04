@@ -92,6 +92,24 @@ void* clienthread(void* args)
 		}
 	}
 	int time_taken = run_maze();
+	char time[10];
+	sprintf(time, "%d", time_taken);
+	strcpy(buff,"time: "); 
+	strcat(buff, time); 
+	printf("sending this to server %s\n", buff); 
+	write(network_socket, &buff, sizeof(buff));
+
+	wait_for_game = 1; 
+	while(wait_for_game){
+		bzero(buff, sizeof(buff));
+		read(network_socket, buff, sizeof(buff));
+		printf("From Server : %s", buff);
+		if ((strncmp(buff, "results", 7)) == 0) {
+			wait_for_game = 0; 
+		}
+	}
+
+
 	
 	sleep(20);
 	// Close the connection
