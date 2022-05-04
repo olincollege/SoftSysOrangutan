@@ -24,6 +24,15 @@ char *welcome_message = "Please wait for other players to be ready \r\n";
 char start_message[] = "start"; 
 int master_socket; 
 
+void start_game(int client_socket[]){
+	for (int i = 0 ; i < max_clients ; i++)
+	{
+		send(client_socket[i], start_message , strlen(start_message) , 0);
+
+	}
+
+}
+
 int check_if_clients_ready(int clients_ready[]){
 	for (int i = 0 ; i < max_clients ; i++)
 	{
@@ -239,10 +248,11 @@ int main(int argc , char *argv[])
 						clients_ready[i] = 1; 
 						printf("%s is ready\n", socket_usernames[i]);
 						if(check_if_clients_ready(clients_ready)){
-							printf("ready to start game\n");
+							printf("starting game\n");
+							start_game(client_socket);
 						}; 
 					}
-					
+			
 			
 					send(sd , buffer , strlen(buffer) , 0 );
 				}
