@@ -13,22 +13,22 @@ int run_maze(){
 	int screen_height, screen_width;
 	time_t start, stop;
 	getmaxyx(stdscr,screen_height,screen_width);
-	int starty = screen_height/2 - 15;
-	int startx = screen_width/2 - 33;
+	int starty = 5;//screen_height/4;//screen_height/2 - 15;
+	int startx = 5;//screen_width/4;//screen_width/2 - 33;
 	int x = startx + 36;
 	int y = starty + 2;
 	int final_time;
-	draw_maze(starty, startx);
+	// draw_maze(starty, startx);
 	cputsxy(x,y,"@");
 	start = time(NULL);
-	while ((key  = getch()) != 'q') {		
+	while ((key  = getch()) != 'q') {
+		draw_maze(starty, startx);		
 		/* Delete the character */		
 		cputsxy(x,y," ");
 		/* Handle keys */
 		int current_x = x;
 		int current_y = y;
-		switch (key) 
-		{ 
+		switch (key) { 
 			case 'w': 
 				y--; 
 				break; 
@@ -55,27 +55,29 @@ int run_maze(){
 			stop = time(NULL);
 			// endwin();
 			final_time = stop - start;
-			endwin();	
-			return final_time;		
-			// printf ("You took %ld seconds to complete the maze!\n",stop - start);
-			// break;			
+			end_setup();
+			return final_time;				
 		}
 		cputsxy(x,y,"@");
 	
     }
     /* Turn echo and cursor back on */
-    echo();
+	end_setup();
+	return -1;
+}
+
+void end_setup(){
+	echo();
     curs_set(1);
     /* End program */
 	endwin();
-	return -1;
 }
 
 void draw_maze(int starty, int startx){
 	for(int i = 0; i < 30; i++){
 		for(int j = 0; j < 39; j++){
 			if (maze_array[i][j] == 0){
-				mvprintw(starty + i, startx + j*2 , "##");
+				mvaddstr(starty + i, startx + j*2 , "##");
 			}
 		}
 	}
