@@ -16,8 +16,79 @@
 
 int network_socket;
 
-void start_game(){
-	printf("this is a test"); 
+int connect_to_server(struct sockaddr_in* server_address){
+	server_address -> sin_family = AF_INET;
+	server_address -> sin_addr.s_addr = INADDR_ANY;
+	//server_address.sin_addr.s_addr = inet_addr("192.168.35.226");
+	server_address -> sin_port = htons(8888);
+
+	// Initiate a socket connection
+	int connection_status = connect(network_socket,(struct sockaddr*)server_address, sizeof(*server_address));
+
+	// Check for connection error
+	if (connection_status < 0) {
+		puts("Error, unable to connect\n");
+		return 0;
+	}
+
+	printf("Connection established\n");
+	return 1;
+	 
+}
+
+void get_username(){
+	char user_input[1025];
+	char flag[] = "username";
+
+	printf("Please enter your username\n");
+	scanf("%s", user_input);
+	printf("your username is %s\n", user_input);
+	
+	// Send data to the socket
+	write(network_socket, &flag, sizeof(flag));
+	sleep(1);
+	write(network_socket, &user_input, sizeof(user_input));
+}
+
+void wait_for_user_ready(){
+	char user_input[1025];
+
+	while(strncmp(user_input, "ready", 5 != 0)){
+		bzero(user_input, sizeof(user_input)); 
+		printf("Please type 'ready' when all players are ready to start\n");
+		scanf("%s", user_input);
+	}
+	write(network_socket, &user_input, sizeof(user_input));
+}
+
+void wait_for_server_ready(int c){
+
+	int wait_for_game = 1;
+	char buff[1025];
+
+	while(wait_for_game){
+		bzero(buff, sizeof(buff));
+		read(network_socket, buff, sizeof(buff));
+		printf("From Server : %s", buff);
+		if (strstr(buff, "start") && c == 1) {
+			wait_for_game = 0; 
+		} else if (strstr(buff, "Game has ended!") && c == 2){
+			wait_for_game = 0; 
+		}
+	}
+}
+
+void run_game(){
+	int time_taken;
+	char time[10];
+	char buff[1025];
+	
+	time_taken = run_maze(); 
+	sprintf(time, "%d", time_taken);
+	strcpy(buff,"\'s time: "); 
+	strcat(buff, time); 
+	printf("Sending time to server! Please wait for other players to finish"); 
+	write(network_socket, &buff, sizeof(buff));
 }
 
 int catch_signal(int sig, void(*handler)(int)){
@@ -34,86 +105,27 @@ void handle_shutdown(int sig){
 	printf("\nGoodbye!\n");
 	exit(0);
 }
-// Function to send data to
-// server socket.
+
 void* clienthread(void* args)
 {
-	int wait_for_game = 1; 
-
 	// Create a stream socket
 	network_socket = socket(AF_INET, SOCK_STREAM, 0);
 
 	// Initialise port number and address
 	struct sockaddr_in server_address;
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = INADDR_ANY;
-	//server_address.sin_addr.s_addr = inet_addr("192.168.35.226");
-	server_address.sin_port = htons(8888);
 
-	// Initiate a socket connection
-	int connection_status = connect(network_socket,(struct sockaddr*)&server_address,
-									sizeof(server_address));
-
-	// Check for connection error
-	if (connection_status < 0) {
-		puts("Error, unable to connect\n");
-		return 0;
-	}
-
-	printf("Connection established\n");
-
-	char input[1025]; 
-	printf("Please enter your username\n");
-	scanf("%s", input);
-	printf("your username is %s\n", input);
+	if(connect_to_server(&server_address) == 0){
+		return 0; 
+	};
 	
-	char flag[] = "username";
-	// Send data to the socket
-	write(network_socket, &flag, sizeof(flag));
-	sleep(1);
-	write(network_socket, &input, sizeof(input));
 
-	while(strncmp(input, "ready", 5 != 0)){
-		bzero(input, sizeof(input)); 
-		printf("Please type 'ready' when all players are ready to start\n");
-		scanf("%s", input);
-	}
+	get_username();
+	wait_for_user_ready(); 
+	wait_for_server_ready(1); 
+	run_game(); 
+	wait_for_server_ready(2); 
 
-	write(network_socket, &input, sizeof(input));
-
-	char buff[1025];
-
-	while(wait_for_game){
-		bzero(buff, sizeof(buff));
-		read(network_socket, buff, sizeof(buff));
-		printf("From Server : %s", buff);
-		if ((strncmp(buff, "start", 5)) == 0) {
-			wait_for_game = 0; 
-		}
-	}
-	int time_taken = run_maze();
-	char time[10];
-	sprintf(time, "%d", time_taken);
-	strcpy(buff,"time: "); 
-	strcat(buff, time); 
-	printf("sending this to server %s\n", buff); 
-	write(network_socket, &buff, sizeof(buff));
-
-	wait_for_game = 1; 
-	while(wait_for_game){
-		bzero(buff, sizeof(buff));
-		read(network_socket, buff, sizeof(buff));
-		printf("From Server : %s", buff);
-		if ((strncmp(buff, "results", 7)) == 0) {
-			wait_for_game = 0; 
-		}
-	}
-
-
-	
-	sleep(20);
-	// Close the connection
-	close(network_socket);
+	close(network_socket); // Close the connection
 	pthread_exit(NULL);
 
 	return 0;
@@ -122,7 +134,6 @@ void* clienthread(void* args)
 // Driver Code
 int main()
 {	
-
 	if(catch_signal(SIGINT, handle_shutdown) == -1){
 		perror("Can't set interrupt handler");
 	}
@@ -131,11 +142,7 @@ int main()
 
 	// Create thread
 	pthread_create(&tid, NULL, clienthread, NULL);
-	
-	sleep(20);
 
-
-	// Suspend execution of
-	// calling thread
+	// Suspend execution of calling thread
 	pthread_join(tid, NULL);
 }

@@ -27,8 +27,17 @@ int master_socket;
 int num_playing = 0;
 int num_connected = 0;  
 int num_times = 0;
+int needs_freeing[30] = { 0 }; 
 
-void end_game(int client_socket[]){
+void free_memory(char** socket_usernames){
+	for (int i = 0; i < max_clients; i++){
+		if(needs_freeing[i])
+			free(socket_usernames[i]);
+	}
+}
+
+void send_end_message(int client_socket[]){
+	
 	for (int i = 0 ; i < max_clients ; i++)
 	{
 		send(client_socket[i], end_message , strlen(end_message) , 0);
@@ -43,16 +52,6 @@ void start_game(int client_socket[]){
 		send(client_socket[i], start_message , strlen(start_message) , 0);
 	}
 
-}
-
-int check_if_clients_ready(int clients_ready[]){
-	for (int i = 0 ; i < max_clients ; i++)
-	{
-		if(clients_ready[i] == 10){
-			return 0; 
-		}
-	}
-	return 1; 
 }
 
 int catch_signal(int sig, void(*handler)(int)){
@@ -158,7 +157,7 @@ int main(int argc , char *argv[])
     int i, max_sd, sd, valread, activity, new_socket;
 	int client_socket[30];
 	char *socket_usernames[30]; 
-	int clients_ready[30] = {}; 
+
 	char *client_times[30] = {}; 
 	int addrlen = sizeof(address);
 
@@ -179,11 +178,10 @@ int main(int argc , char *argv[])
 	//accept the incoming connection
 	puts("Waiting for connections ...");
 	
-	int accepting_connections = 1; 
 	int accepting_username = 0; 
-	char gamemaster_input[100]; 
+	int playing = 1; 
 		
-	while(accepting_connections)
+	while(playing)
 	{
 		//clear the socket set
 		FD_ZERO(&readfds);
@@ -244,7 +242,9 @@ int main(int argc , char *argv[])
 					//Close the socket and mark as 0 in list for reuse
 					close( sd );
 					client_socket[i] = 0;
-					socket_usernames[i] = "";
+					if(needs_freeing[i])
+						free(socket_usernames[i]);
+		
 				}
 					
 				//Echo back the message that came in
@@ -254,8 +254,10 @@ int main(int argc , char *argv[])
 					//of the data read
 					buffer[valread] = '\0';
 					if(accepting_username){
-						socket_usernames[i] = buffer; 
-						printf("username set to %s\n", buffer);
+						socket_usernames[i] = malloc(strlen(buffer) + 21);
+						needs_freeing[i] = 1; 
+						strcpy(socket_usernames[i],buffer); 
+						printf("username set to %s\n", socket_usernames[i]);
 						accepting_username = 0; 
 					}else if (strstr(buffer, "username")) {
 						accepting_username = 1; 
@@ -267,14 +269,18 @@ int main(int argc , char *argv[])
 							start_game(client_socket);
 						}; 
 					} else if (strstr(buffer, "time:")) {
-						printf("time recieved\n"); 
+						printf("time recieved from %s\n", socket_usernames[i]); 
 						strcat(socket_usernames[i], buffer);
 						strcat(end_message, socket_usernames[i]);
 						strcat(end_message, "\n");
 
+
 						num_times += 1; 
 						if(num_times == num_playing){
-							end_game(client_socket); 
+							free_memory(socket_usernames); 
+							send_end_message(client_socket);
+							playing = 0;  
+							
 						}
 					}
 			
@@ -283,8 +289,9 @@ int main(int argc , char *argv[])
 			}
 		}
 	}
-	
-	//start game
+
+	puts("Thank you for playing! Shutting down in 20 seconds"); 
+	sleep(20);
 		
 	return 0;
 }
