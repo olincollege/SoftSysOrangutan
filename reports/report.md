@@ -25,7 +25,8 @@ Multithreading socket programming: https://www.geeksforgeeks.org/handling-multip
 ### Client 
 To run the client code, simply compile everything by typing “make”, and run ‘./client. If a client is able to connect to a running server, it will print “connection established” and prompt you for a username.
 
-![](reports/images/image4.png)
+![](../reports/images/image4.png)
+
 
 Once a user enters their username, it will be printed back and the server will prompt the user to type “ready” in order to start the game.
 
