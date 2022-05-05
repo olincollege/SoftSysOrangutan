@@ -80,7 +80,7 @@ void handle_incoming_connection(struct sockaddr_in* address, int* addrlen, int *
 }
 
 void add_child_sockets(int client_socket[], int* sd, int* max_sd, fd_set * readfds){
-	/* Add child sockets to set */
+	/* Add child sockets to read list */
 
 	for (int i = 0 ; i < max_clients ; i++)
 	{
@@ -167,6 +167,7 @@ int main(int argc , char *argv[])
 		FD_SET(master_socket, &readfds); //add master socket to set
 		max_sd = master_socket;
 		
+		//add connected sockets to read list
 		add_child_sockets(client_socket, &sd, &max_sd, &readfds);
 
 		//wait for an activity on one of the sockets , timeout is NULL, so wait indefinitely
@@ -200,7 +201,7 @@ int main(int argc , char *argv[])
 				valread = read( sd , buffer, 1024); 
 				buffer[valread] = '\0'; //set the string terminating NULL byte on the end of the data read
 				
-				//Check if it was for closing, and also read the incoming message
+				//Check if it was for closing
 				if (valread == 0){
 					//Somebody disconnected , get their details and print
 					getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
@@ -253,6 +254,7 @@ int main(int argc , char *argv[])
 
 	puts("Thank you for playing! Shutting down in 20 seconds"); 
 	sleep(20);
+	close(master_socket);
 		
 	return 0;
 }
