@@ -78,38 +78,38 @@ void draw_maze(){
 To control the movement, we had functions that checked for keypresses to update the sprite accordingly, checked for the edges of the maze and checked if the sprite had crossed the finish line. Below is a code snippet that shows the main loop of the maze where all these functions work together. 
 
 ```
-	while (end_flag) {
-		// Draw the maze
-		if (check_screen_size())
-			draw_maze();
+while (end_flag) {
+    // Draw the maze
+    if (check_screen_size())
+        draw_maze();
 
-		// Receive key press
-		key = getch();	
+    // Receive key press
+    key = getch();	
 
-		// Delete and store current position
-		cputsxy(x,y," ");
-		current_x = x;
-		current_y = y;
+    // Delete and store current position
+    cputsxy(x,y," ");
+    current_x = x;
+    current_y = y;
 
-		// Update sprite position
-		update_sprite(&x, &y, key);
-		// Check for edges
-		check_edges(&x, &y, current_x, current_y);
-		
-		// check win
-		if (check_win(&x, &y)){
-			cputsxy(x,y,"@");
-			stop = time(NULL);
-			int final_time = stop - start;
-			end_setup();
-			return final_time;				
-		}
-		cputsxy(x,y,"@");
-
-		// check for quitting
-		if(key == 'q')
-			end_flag = 0;	
+    // Update sprite position
+    update_sprite(&x, &y, key);
+    // Check for edges
+    check_edges(&x, &y, current_x, current_y);
+    
+    // check win
+    if (check_win(&x, &y)){
+        cputsxy(x,y,"@");
+        stop = time(NULL);
+        int final_time = stop - start;
+        end_setup();
+        return final_time;				
     }
+    cputsxy(x,y,"@");
+
+    // check for quitting
+    if(key == 'q')
+        end_flag = 0;	
+}
 ```
 Once players cross through the finish line, the time that it took each player to complete the maze is sent to the server. The times for all the players are then written back to the client in order for them to see how they ranked. 
 
