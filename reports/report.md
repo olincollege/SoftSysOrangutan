@@ -30,24 +30,24 @@ To run the client code, simply compile everything by typing “make”, and run 
 
 Once a user enters their username, it will be printed back and the server will prompt the user to type “ready” in order to start the game.
 
-![Client About to Start](reports/images/image3.png)
+![Client About to Start](../reports/images/image3.png)
 
 Once all the connected clients type ready, the game begins for all clients and a maze is displayed on the terminal as shown below.  If the terminal size is too small for the maze to be printed, a message will be displayed prompting the user to increase their terminal size. Once in the maze, the clients try to get their player to the finish line using WASD keys. 
 
-![Maze](reports/images/image1.png)
+![Maze](../reports/images/image1.png)
 
-![Window Too Small](reports/images/image2.png)
+![Window Too Small](../reports/images/image2.png)
 
 Once a client finishes a game, the maze will disappear and the time taken by that user will be sent to the server. Once all the players have finished, the times taken by all the clients will be printed on each of the clients’ terminals. 
 
-![Final Client Screen](reports/images/image5.png)
+![Final Client Screen](../reports/images/image5.png)
 
 ### Server 
 To run the server code, simply compile everything by typing “make”, and run ‘./server’. The terminal should tell you what port the server is listening to, and that it’s “Waiting for connections”. Once a client connects to the server, either through a local network with an ip address, or through the same machine’s local host, the server will print out the client’s ip address and port. If the new client connects successfully, the server code will also print out “Welcome message sent successfully” and “Adding to list of sockets as x”, where x is the number identifying that specific client’s socket. 
 
 The server will continue to print out updates indicating what has been communicated by client sockets, including when the client enters a username or sends a ready signal. When all connected clients indicate that they are ready, the server will automatically start the game, and wait for clients to send their times. Once all clients have submitted a time, indicating that they all finished the maze, the server will send out the resulting scoreboard to all clients, and shut itself down. 
 
-![Server Screen](reports/images/image7.png)
+![Server Screen](../reports/images/image7.png)
 
 ## What We Did
 
