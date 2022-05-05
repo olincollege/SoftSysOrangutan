@@ -17,9 +17,11 @@
 int network_socket;
 
 int connect_to_server(struct sockaddr_in* server_address){
+	/* Connect to server socket */
+
 	server_address -> sin_family = AF_INET;
 	server_address -> sin_addr.s_addr = INADDR_ANY;
-	//server_address.sin_addr.s_addr = inet_addr("192.168.35.226");
+	//server_address -> sin_addr.s_addr = inet_addr("192.168.35.226");
 	server_address -> sin_port = htons(8888);
 
 	// Initiate a socket connection
@@ -33,10 +35,11 @@ int connect_to_server(struct sockaddr_in* server_address){
 
 	printf("Connection established\n");
 	return 1;
-	 
 }
 
 void get_username(){
+	/* Get username from user input */
+
 	char user_input[1025];
 	char flag[] = "username";
 
@@ -44,13 +47,16 @@ void get_username(){
 	scanf("%s", user_input);
 	printf("your username is %s\n", user_input);
 	
-	// Send data to the socket
+	// Send flag to server indicating next message is username
 	write(network_socket, &flag, sizeof(flag));
 	sleep(1);
+	// Send username to server 
 	write(network_socket, &user_input, sizeof(user_input));
 }
 
 void wait_for_user_ready(){
+	/* Wait for user to type 'ready' into terminal, then send ready signal to server */
+
 	char user_input[1025];
 
 	while(strncmp(user_input, "ready", 5) != 0){
@@ -62,22 +68,27 @@ void wait_for_user_ready(){
 }
 
 void wait_for_server_ready(int c){
-	int wait_for_game = 1;
+	/* Wait for a specific signal from the server before exiting function.
+	int c indicates which signal to wait for */
+
 	char buff[1025];
 
-	while(wait_for_game){
+	while(1){
 		bzero(buff, sizeof(buff));
 		read(network_socket, buff, sizeof(buff));
 		printf("From Server : %s\n", buff);
 		if (strstr(buff, "start") && c == 1) {
-			wait_for_game = 0; 
+			//upon recieving start signal, exit function
+			return; 
 		} else if (strstr(buff, "Game has ended!") && c == 2){
-			wait_for_game = 0; 
+			//upon recieving game ended signal, exit function
+			return; 
 		}
 	}
 }
 
 void run_game(){
+	/* Draw maze, wait for user to complete the maze, and send time to server */
 	int time_taken;
 	char time[10];
 	char buff[1025];
@@ -85,12 +96,13 @@ void run_game(){
 	time_taken = run_maze(); 
 	sprintf(time, "%d", time_taken);
 	strcpy(buff,"\'s time: "); 
-	strcat(buff, time); 
+	strcat(buff, time);
 	printf("Sending time to server! Please wait for other players to finish\n"); 
 	write(network_socket, &buff, sizeof(buff));
 }
 
 int catch_signal(int sig, void(*handler)(int)){
+	/* Handle interruptions from os */
 	struct sigaction action;
 	action.sa_handler = handler; 
 	sigemptyset(&action.sa_mask); 
@@ -99,6 +111,7 @@ int catch_signal(int sig, void(*handler)(int)){
 }
 
 void handle_shutdown(int sig){
+	/* handle shutdown signal */
 	if(network_socket)
 		close(network_socket);
 	printf("\nGoodbye!");
@@ -116,13 +129,12 @@ void* clienthread(void* args)
 	if(connect_to_server(&server_address) == 0){
 		return 0; 
 	};
-	
 
 	get_username();
 	wait_for_user_ready(); 
-	wait_for_server_ready(1); 
-	run_game(); 
-	wait_for_server_ready(2); 
+	wait_for_server_ready(1); // wait for server to indicate all users are ready
+	run_game(); // start game
+	wait_for_server_ready(2); // wait for server to indicate all users finished maze, ending the game
 
 	close(network_socket); // Close the connection
 	pthread_exit(NULL);
@@ -130,7 +142,6 @@ void* clienthread(void* args)
 	return 0;
 }
 
-// Driver Code
 int main()
 {	
 	if(catch_signal(SIGINT, handle_shutdown) == -1){
