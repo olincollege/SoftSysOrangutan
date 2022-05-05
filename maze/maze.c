@@ -1,4 +1,4 @@
-
+// C program for running maze game
 #include <ncurses.h>			/* ncurses.h includes stdio.h */  
 #include <string.h> 
 #include <time.h>
@@ -12,7 +12,6 @@ int run_maze(){
 	taken to complete the maze or -1 if the player quits ahead of time.*/
 	clrscr();
 	int key;
-	int screen_height, screen_width;
 	time_t start, stop;
 	int x = 36; int y = 2;
 	int current_x; int current_y;
